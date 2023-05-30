@@ -1,0 +1,81 @@
+* Установить Nginx и настроить его на работу с PHP-FPM.
+
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo apt install curl
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo apt install nginx
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo ss –ntlp
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# curl localhost
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo apt install php8.1-fpm
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo nano /etc/nginx/sites-enabled/default
+    #location ~ \.php$ # подключил конфигурации location php
+    fastcgi_pass unix:/run/php/php8.1-fpm.sock # поменял путь к сокету
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo systemctl reload nginx
+
+* *Установить Apache. Настроить обработку PHP. Добиться одновременной работы с Nginx.
+
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo apt install apache2
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo ss –ntlp
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# apachectl –t
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# systemctl status apache2
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo nano /etc/apache2/ports.conf # открыл файл ports, изменил Listen 8080
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo systemctl start apache2
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# systemctl status apache2
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# ps afx
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo nano /etc/apache2/sites-enabled/000-default.conf # запустил файл, изменил <VirtualHost*:8080>
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo systemctl reload apache2
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# curl localhost:8080
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo apt install php8.1 libapache2-mod-php8.1
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# cd /var/www/html/
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# cat > info.php # через sudo su создал файл с содержимым: 
+    <?php
+    phpinfo();
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo nano /etc/nginx/sites-enabled/default
+    #location ~ \.php$ # отключил location php
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo systemctl reload nginx
+# перешел по ip/info.php
+
+* Настроить схему обратного прокси для Nginx (динамика - на Apache).
+
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo nano /etc/nginx/sites-enabled/default
+    location / {
+    proxy_pass http://localhost:8080;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP $remote_addr;
+    } 
+
+    location ~ \.php$ {
+    include snippets/fastcgi-php.conf;
+    root /var/www/html;
+    fastcgi_pass unix:/run/php/php7.4-fpm.sock;
+    }
+
+    location ~* ^.+.(jpg|jpeg|gif|png|ico|css|zip|pdf|txt|tar|js)$ {
+    include /etc/nginx/static.conf;
+    }
+    
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo nginx –t
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo systemctl reload nginx
+перешел по ip, увидел приветственное окно
+
+* Установить MySQL. Создать новую базу данных и таблицу в ней.
+
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo apt install mysql-server-8.0
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo ss –ntlp проверил сокет MySQL # порт: 3306
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo mysql # зашел в консоль MySQL
+- CREATE DATABASE mayBD; # создал свою БД
+- show databases; # проверил список БД
+- use mayBD; # перешел в БД
+- CREATE TABLE test(i INT); # создал таблицу
+- INSERT INTO test (i) VALUES (1),(2),(3),(4); # создал запись в таблице 
+- show tables; # просмотрел таблицу
+- SELECT * FROM test; проверил содержимое таблицы
+
+* * Установить пакет phpmyadmin и запустить его веб-интерфейс для управления MySQL.
+
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo apt install phpmyadmin
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo ln -s /usr/share/phpmyadmin /var/www/html/
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo systemctl restart apache2
+
+* * Настроить схему балансировки трафика между несколькими серверами Apache на стороне Nginx с помощью модуля ngx_http_upstream_module.
+
+???
