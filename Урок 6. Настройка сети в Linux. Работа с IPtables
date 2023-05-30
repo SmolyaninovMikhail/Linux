@@ -36,4 +36,5 @@ root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo iptables -t nat -I PRERO
 
 * * Разрешить подключение по SSH только из сети 192.168.0.0/24.
 
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo iptables -I INPUT -p tcp --dport 22 -j DROP
 root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo iptables -I INPUT -p tcp --dport 22 -s 192.168.0.0/24 -j ACCEPT
