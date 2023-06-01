@@ -78,4 +78,40 @@ root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo systemctl restart apache
 
 * * Настроить схему балансировки трафика между несколькими серверами Apache на стороне Nginx с помощью модуля ngx_http_upstream_module.
 
-???
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo apt update
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo apt install nginx
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo nano /etc/nginx/nginx.conf
+
+# http {
+    upstream backend {
+        server 192.168.1.2:80;
+        server 192.168.1.3:80;
+        server 192.168.1.4:80;
+    }
+    server {
+        listen 80;
+        location / {
+            proxy_pass http://backend;
+        }
+    }
+}
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo nginx -t # syntax is ok
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo systemctl restart nginx
+
+# http {
+    upstream backend {
+        ip_hash;
+        server 192.168.1.2:80;
+        server 192.168.1.3:80;
+        server 192.168.1.4:80;
+    }
+    server {
+        listen 80;
+        location / {
+            proxy_pass http://backend;
+        }
+    }
+}
+
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo nginx -t
+root@rucheyshestvo-VirtualBox:/home/rucheyshestvo# sudo service nginx restart
